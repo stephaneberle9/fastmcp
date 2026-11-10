@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+import httpx2
 from key_value.aio.protocols import AsyncKeyValue
 from pydantic import AnyHttpUrl
 
@@ -119,6 +120,7 @@ class ZitadelProvider(OIDCProxy):
         fallback_refresh_token_expiry_seconds: int | None = None,
         fastmcp_access_token_expiry_seconds: int | None = None,
         token_expiry_threshold_seconds: int = 0,
+        http_client: httpx2.AsyncClient | None = None,
         enable_cimd: bool = True,
         identity_assertion: IdentityAssertion | None = None,
     ) -> None:
@@ -186,6 +188,10 @@ class ZitadelProvider(OIDCProxy):
                 (mirror the upstream lifetime). See `OAuthProxy` for details.
             token_expiry_threshold_seconds: Number of seconds before actual expiry to
                 treat a token as expired, refreshing early to avoid races. Defaults to 0.
+            http_client: Optional httpx2.AsyncClient for connection pooling in token
+                introspection. When provided, the client is reused across verify_token
+                calls and the caller is responsible for its lifecycle. When None
+                (default), a fresh client is created per call.
             enable_cimd: Enable CIMD (Client ID Metadata Document) support for URL-based
                 client IDs (default True). CIMD is handled by FastMCP, so it works even
                 though ZITADEL does not support it. Set to False to disable.
@@ -204,6 +210,7 @@ class ZitadelProvider(OIDCProxy):
         self.client_id = client_id
         self._client_secret = client_secret
         self._introspection_cache_ttl_seconds = introspection_cache_ttl_seconds
+        self._http_client = http_client
         self._introspection_timeout_seconds = (
             timeout_seconds or DEFAULT_OIDC_DISCOVERY_TIMEOUT_SECONDS
         )
@@ -278,4 +285,5 @@ class ZitadelProvider(OIDCProxy):
             required_scopes=required_scopes,
             timeout_seconds=self._introspection_timeout_seconds,
             cache_ttl_seconds=self._introspection_cache_ttl_seconds,
+            http_client=self._http_client,
         )

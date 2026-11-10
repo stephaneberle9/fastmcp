@@ -8,6 +8,7 @@ from typing import Any
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
+import httpx2
 import pytest
 
 from fastmcp.server.auth.providers.introspection import IntrospectionTokenVerifier
@@ -163,6 +164,16 @@ class TestZitadelTokenVerifier:
         assert verifier.audience == CLIENT_ID
         assert verifier.required_scopes == ["openid"]
         assert verifier._cache._ttl == 60
+        assert verifier._http_client is None
+
+    async def test_reuses_shared_http_client(self):
+        async with httpx2.AsyncClient() as http_client:
+            with mock_zitadel_discovery():
+                provider = _make_provider(http_client=http_client)
+
+            verifier = provider._token_validator
+            assert isinstance(verifier, IntrospectionTokenVerifier)
+            assert verifier._http_client is http_client
 
     async def test_verifies_active_token(self, httpx_mock: HTTPXMock):
         with mock_zitadel_discovery():

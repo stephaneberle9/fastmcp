@@ -73,7 +73,7 @@ auth_provider = ZitadelProvider(
     client_id="123456789012345678",                      # Web application client ID
     client_secret="your-client-secret",                  # Web application client secret
     base_url="http://localhost:8000",                    # Must match your redirect URI
-    required_scopes=["openid", "offline_access"],        # offline_access enables refresh
+    required_scopes=["openid", "profile", "email", "offline_access"],  # offline_access enables refresh
 )
 
 mcp = FastMCP(name="ZITADEL Secured App", auth=auth_provider)
@@ -92,7 +92,7 @@ async def get_user_info() -> dict:
 
 The `domain` accepts a bare host (`my-instance-abc123.zitadel.cloud`, which defaults to HTTPS) or a full URL, such as `http://localhost:8080` for a local self-hosted instance.
 
-`required_scopes` defaults to `["openid"]`. Add `offline_access` only once the Refresh Token grant is enabled on the application. To request the user's profile and email as well, add `profile` and `email`.
+`required_scopes` defaults to `["openid"]`. `profile` and `email` populate the `username` and `email` claims the tool above reads. Add `offline_access` only once the Refresh Token grant is enabled on the application.
 
 ## Testing
 
